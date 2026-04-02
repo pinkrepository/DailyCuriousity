@@ -1,47 +1,44 @@
+// Replace the URL below with your "Published to Web" CSV link
 const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTx-zAxrhc8vorsLIA0fWwQPWpLf0aK11E7GBjKpLCwpwaDmb1YU3d6gKcPNVxgtQC1ZS62dhZp2LD-/pub?gid=0&single=true&output=csv";
 
 async function fetchQuotes() {
     try {
-        const response = await fetch(sheetURL);
+        // Adding a timestamp prevents GitHub from caching an old version of your sheet
+        const response = await fetch(`${sheetURL}&t=${new Date().getTime()}`);
         const data = await response.text();
         
-        // This regex specifically handles multi-line cells (like poems) 
-        // and keeps the Quote and Author columns synced.
-        const regex = /(".*?"|[^",\r\n]+)(?=\s*,|\s*(\r?\n|$))/gs;
-        const matches = [...data.matchAll(regex)];
-        const cells = matches.map(m => m[0].replace(/^"|"$/g, '').trim());
+        // Split by lines and filter out empty ones
+        const rows = data.split('\n').filter(row => row.trim() !== '');
+        
+        // Remove the header row (Column A, Column B)
+        rows.shift();
 
-        const quotes = [];
-        // Starts at index 2 to skip the headers (Quote, Author)
-        // Steps by 2 to grab each pair of columns
-        for (let i = 2; i < cells.length; i += 2) {
-            if (cells[i]) {
-                quotes.push({
-                    q: cells[i],
-                    a: cells[i+1] || "Unknown"
-                });
-            }
-        }
-
-        if (quotes.length > 0) {
-            displayRandomQuote(quotes);
+        if (rows.length > 0) {
+            displayRandomQuote(rows);
+        } else {
+            document.getElementById('quote').innerText = "No quotes found in sheet!";
         }
     } catch (error) {
-        console.error("Error fetching sheet:", error);
+        console.error("Error fetching quotes:", error);
+        document.getElementById('quote').innerText = "Connection error. Check your CSV link!";
     }
 }
 
-function displayRandomQuote(list) {
-    const item = list[Math.floor(Math.random() * list.length)];
-    const quoteElement = document.getElementById('quote');
-    const authorElement = document.getElementById('author');
+function displayRandomQuote(rows) {
+    const randomIndex = Math.floor(Math.random() * rows.length);
+    const randomRow = rows[randomIndex];
+
+    // This regex splits the CSV correctly even if there are commas inside the quotes
+    const parts = randomRow.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
     
-    // 1. Clean the quote: Remove any existing double quotes from the start/end
-    let cleanQuote = item.q.trim().replace(/^"+|"+$/g, '');
-    
-    // 2. Display with exactly ONE set of quotes
-    quoteElement.innerText = `"${cleanQuote}"`;
-    authorElement.innerText = `— ${item.a}`;
+    if (parts && parts.length >= 1) {
+        let quoteText = parts[0].replace(/^"|"$/g, '').replace(/""/g, '"');
+        let authorText = parts[1] ? parts[1].replace(/^"|"$/g, '').replace(/""/g, '"') : "Unknown";
+
+        // Convert the "Alt+Enter" line breaks from Google Sheets into HTML breaks
+        document.getElementById('quote').innerHTML = quoteText.replace(/\n/g, '<br>');
+        document.getElementById('author').innerText = authorText;
+    }
 }
 
 fetchQuotes();
