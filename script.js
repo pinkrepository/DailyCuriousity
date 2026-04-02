@@ -3,42 +3,57 @@ const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTx-zAxrhc8vor
 
 async function fetchQuotes() {
     try {
-        // Adding a timestamp prevents GitHub from caching an old version of your sheet
         const response = await fetch(`${sheetURL}&t=${new Date().getTime()}`);
-        const data = await response.text();
+        const csvText = await response.text();
         
-        // Split by lines and filter out empty ones
-        const rows = data.split('\n').filter(row => row.trim() !== '');
+        // Use a robust parser for multi-line CSV cells
+        const rows = parseCSV(csvText);
         
-        // Remove the header row (Column A, Column B)
+        // Remove the header row
         rows.shift();
 
-        if (rows.length > 0) {
-            displayRandomQuote(rows);
+        // Filter out any completely empty rows
+        const cleanRows = rows.filter(row => row[0] && row[0].trim() !== '');
+
+        if (cleanRows.length > 0) {
+            displayRandomQuote(cleanRows);
         } else {
-            document.getElementById('quote').innerText = "No quotes found in sheet!";
+            document.getElementById('quote').innerText = "No quotes found!";
         }
     } catch (error) {
-        console.error("Error fetching quotes:", error);
-        document.getElementById('quote').innerText = "Connection error. Check your CSV link!";
+        console.error("Error:", error);
+        document.getElementById('quote').innerText = "Connection error!";
     }
 }
 
-function displayRandomQuote(rows) {
-    const randomIndex = Math.floor(Math.random() * rows.length);
-    const randomRow = rows[randomIndex];
+// A professional-grade CSV parser that handles multi-line cells correctly
+function parseCSV(text) {
+    const p = /"([^"]*(?:""[^"]*)*)"|([^,\r\n]+)|(?<=^|,)(?=[,\r\n]|$)/g;
+    const rows = [[]];
+    let m;
+    let lastIndex = 0;
 
-    // This regex splits the CSV correctly even if there are commas inside the quotes
-    const parts = randomRow.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-    
-    if (parts && parts.length >= 1) {
-        let quoteText = parts[0].replace(/^"|"$/g, '').replace(/""/g, '"');
-        let authorText = parts[1] ? parts[1].replace(/^"|"$/g, '').replace(/""/g, '"') : "Unknown";
-
-        // Convert the "Alt+Enter" line breaks from Google Sheets into HTML breaks
-        document.getElementById('quote').innerHTML = quoteText.replace(/\n/g, '<br>');
-        document.getElementById('author').innerText = authorText;
+    while (m = p.exec(text)) {
+        if (text.substring(lastIndex, m.index).includes('\n') && rows[rows.length-1].length > 0) {
+            rows.push([]);
+        }
+        let v = m[1] !== undefined ? m[1].replace(/""/g, '"') : (m[2] !== undefined ? m[2] : "");
+        rows[rows.length - 1].push(v);
+        lastIndex = p.lastIndex;
     }
+    return rows;
+}
+
+function displayRandomQuote(rows) {
+    const randomRow = rows[Math.floor(Math.random() * rows.length)];
+    
+    // Column A is the Quote, Column B is the Author
+    let quoteText = randomRow[0] || "No Quote";
+    let authorText = randomRow[1] || "Unknown";
+
+    // This converts the line breaks inside the cell into HTML breaks for the screen
+    document.getElementById('quote').innerHTML = quoteText.replace(/\n/g, '<br>');
+    document.getElementById('author').innerText = authorText;
 }
 
 fetchQuotes();
