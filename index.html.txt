@@ -1,0 +1,4 @@
+<div id="wrapper">
+    <div id="quote">"Loading..."</div>
+    <div id="author"></div>
+</div>

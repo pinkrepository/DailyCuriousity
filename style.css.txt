@@ -1,0 +1,50 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: #e35da0; /* Your custom pink */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* Centers the quote vertically */
+    justify-content: center; 
+    /* Aligns the wrapper to the right side */
+    align-items: flex-end;
+}
+
+#wrapper {
+    /* Adjust right padding for breathing room on the edge */
+    padding-right: 60px; 
+    max-width: 85%;
+    text-align: right;
+    color: white;
+    /* Clean Typewriter Font */
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#quote {
+    font-size: 2.5rem;
+    line-height: 1.25;
+    margin-bottom: 20px;
+    /* CRITICAL: This makes the poem line breaks work */
+    white-space: pre-wrap; 
+}
+
+#author {
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.9;
+}
+
+/* Mobile adjustments for phone screens */
+@media (max-width: 600px) {
+    #quote { 
+        font-size: 1.8rem; 
+    }
+    #wrapper { 
+        padding-right: 30px; 
+        max-width: 90%;
+    }
+}
